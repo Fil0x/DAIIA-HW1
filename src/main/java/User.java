@@ -6,28 +6,16 @@ public class User {
 
     private String fullname;
     private int age;
-    private String occupation;
     private Gender gender;
     private List<String> interests;
-    private List<Artifact> visited;
 
     public User(String fullname, int age, String occupation, Gender gender,
                 List<String> interests) {
         this.fullname = fullname;
 
         this.age = age;
-        this.occupation = occupation;
         this.gender = gender;
         this.interests = interests;
-        this.visited = new ArrayList<Artifact>();
-    }
-
-    public String getOccupation() {
-        return occupation;
-    }
-
-    public void setOccupation(String occupation) {
-        this.occupation = occupation;
     }
 
     public String getFullname() {
@@ -62,11 +50,4 @@ public class User {
         this.interests = interests;
     }
 
-    public List<Artifact> getVisited() {
-        return visited;
-    }
-
-    public void setVisited(List<Artifact> visited) {
-        this.visited = visited;
-    }
 }

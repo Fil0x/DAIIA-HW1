@@ -1,0 +1,11 @@
+egyptian
+assyrian
+aramaic
+greek
+akkadian
+modern
+hebrew
+latin
+french
+pre-historic
+mediterranean
