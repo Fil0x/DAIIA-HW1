@@ -1,7 +1,10 @@
+import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.TickerBehaviour;
 import jade.core.behaviours.WakerBehaviour;
+import jade.domain.FIPANames;
 import jade.lang.acl.ACLMessage;
+import jade.lang.acl.MessageTemplate;
 import jade.proto.SimpleAchieveREInitiator;
 
 public class ProfilerAgent extends Agent{
@@ -30,11 +33,20 @@ public class ProfilerAgent extends Agent{
         @Override
         public void onStart() {
             System.out.println("Agent:" + getAgent().getName() + "[Ticker:" + getPeriod() + "] is ready!");
+            //ACLMessage initiationMessage
+            //MySimpleAchieveREInitiator initiator = new MySimpleAchieveREInitiator(getAgent(), );
         }
 
         @Override
         protected void onTick() {
+            System.out.println("Num behaviors in queue " +  getAgent().getQueueSize());
             System.out.println("Agent:" + getAgent().getName() + "[Ticker:" + getPeriod() + "] passed.");
+            ACLMessage request = new ACLMessage(ACLMessage.REQUEST);
+            request.addReceiver(new AID("curator", AID.ISLOCALNAME));
+            request.setLanguage(FIPANames.ContentLanguage.FIPA_SL0);
+            request.setOntology(FIPANames.Ontology.SL0_ONTOLOGY);
+            getAgent().addBehaviour(new MySimpleAchieveREInitiator(getAgent(), request));
+
         }
     }
 
@@ -59,6 +71,26 @@ public class ProfilerAgent extends Agent{
 
         public MySimpleAchieveREInitiator(Agent a, ACLMessage msg) {
             super(a, msg);
+            msg.setProtocol(FIPANames.InteractionProtocol.FIPA_REQUEST);
+
+        }
+
+        protected void handleAgree(ACLMessage msg) {
+            System.out.println("Engagement agreed. Waiting for completion notification...");
+        }
+        protected void handleInform(ACLMessage msg) {
+            System.out.println("Engagement successfully completed");
+        }
+        protected void handleNotUnderstood(ACLMessage msg) {
+            System.out.println("Engagement request not understood by engager agent");
+        }
+        protected void handleFailure(ACLMessage msg) {
+            System.out.println("Engagement failed");
+        }
+        protected void handleRefuse(ACLMessage msg) {
+            System.out.println("Engagement refused");
         }
     }
+
+
 }
