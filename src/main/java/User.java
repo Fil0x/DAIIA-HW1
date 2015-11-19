@@ -1,5 +1,6 @@
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class User {
     private enum Gender {MALE, FEMALE};
@@ -9,13 +10,15 @@ public class User {
     private Gender gender;
     private List<String> interests;
 
-    public User(String fullname, int age, String occupation, Gender gender,
-                List<String> interests) {
+    public User(String fullname, int age, List<String> interests) {
         this.fullname = fullname;
-
         this.age = age;
-        this.gender = gender;
         this.interests = interests;
+
+        if(new Random().nextInt(2) == 0)
+            this.gender = Gender.FEMALE;
+        else
+            this.gender = Gender.MALE;
     }
 
     public String getFullname() {

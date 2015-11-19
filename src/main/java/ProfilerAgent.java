@@ -1,5 +1,6 @@
 import jade.core.AID;
 import jade.core.Agent;
+import jade.core.behaviours.FSMBehaviour;
 import jade.core.behaviours.TickerBehaviour;
 import jade.core.behaviours.WakerBehaviour;
 import jade.domain.FIPANames;
@@ -7,14 +8,35 @@ import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import jade.proto.SimpleAchieveREInitiator;
 
-public class ProfilerAgent extends Agent{
+public class ProfilerAgent extends Agent {
+
+    private int TOTAL_TIME = 60000;
+    private int SPAWN_TIME = 5000;
+    private FSMBehaviour fsm;
+
     public ProfilerAgent() {
         super();
 
         // This behaviour will be used to create random tourists every <period>
-        addBehaviour(new MyTickerBehavior(this, 3000));
+        addBehaviour(new MyTickerBehavior(this, SPAWN_TIME));
         // The total transaction timeout, we can't wait forever for the curator
-        addBehaviour(new MyWakerBehavior(this, 8000));
+        addBehaviour(new MyWakerBehavior(this, TOTAL_TIME));
+        // Model the FSM
+        initFSM();
+    }
+
+    private void initFSM() {
+        // TODO
+        //
+        fsm = new FSMBehaviour(this) {
+            public int onEnd() {
+                System.out.println("FSM behaviour completed.");
+                myAgent.doDelete();
+                return super.onEnd();
+            }
+        };
+
+
     }
 
     protected void setup() {
@@ -39,7 +61,6 @@ public class ProfilerAgent extends Agent{
 
         @Override
         protected void onTick() {
-            System.out.println("Num behaviors in queue " +  getAgent().getQueueSize());
             System.out.println("Agent:" + getAgent().getName() + "[Ticker:" + getPeriod() + "] passed.");
             ACLMessage request = new ACLMessage(ACLMessage.REQUEST);
             request.addReceiver(new AID("curator", AID.ISLOCALNAME));
@@ -91,6 +112,4 @@ public class ProfilerAgent extends Agent{
             System.out.println("Engagement refused");
         }
     }
-
-
 }

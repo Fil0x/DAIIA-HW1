@@ -4,9 +4,9 @@ import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import jade.proto.SimpleAchieveREResponder;
 
+public class PlatformAgent extends Agent {
 
-public class CuratorAgent extends Agent {
-    public CuratorAgent(){
+    public PlatformAgent(){
         super();
         MessageTemplate mt = MessageTemplate.MatchProtocol(FIPANames.InteractionProtocol.FIPA_REQUEST);
         addBehaviour(new MySimpleAchieveREResponder(this, mt));

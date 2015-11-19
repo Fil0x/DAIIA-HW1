@@ -46,5 +46,23 @@ public class MyFileReader {
         return instance;
     }
 
+    public static List<String> getPersons() {
+        return persons;
+    }
 
+    public static List<String> getArtifacts() {
+        return artifacts;
+    }
+
+    public static List<String> getCities() {
+        return cities;
+    }
+
+    public static List<String> getCreators() {
+        return creators;
+    }
+
+    public static List<String> getGenre() {
+        return genre;
+    }
 }
