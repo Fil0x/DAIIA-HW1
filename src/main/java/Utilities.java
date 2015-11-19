@@ -7,9 +7,10 @@ public class Utilities {
         return id;
     }
 
-    public User getUser(int num_interests) {
-        List<String> allUsers = MyFileReader.getPersons();
-        List<String> allGenres = MyFileReader.getGenre();
+    public static User getUser(int num_interests) {
+        MyFileReader fr = MyFileReader.getInstance();
+        List<String> allUsers = fr.getPersons();
+        List<String> allGenres = fr.getGenre();
         Random r = new Random();
 
         String name = allUsers.get(r.nextInt(allUsers.size()));
@@ -24,12 +25,13 @@ public class Utilities {
         return new User(name, age, interests);
     }
 
-    public Artifact getArtifact() {
+    public static Artifact getArtifact() {
+        MyFileReader fr = MyFileReader.getInstance();
         int id = generateItemId();
-        List<String> allGenres = MyFileReader.getGenre();
-        List<String> allNames = MyFileReader.getArtifacts();
-        List<String> allCities = MyFileReader.getCities();
-        List<String> allCreators = MyFileReader.getCreators();
+        List<String> allGenres = fr.getGenre();
+        List<String> allNames = fr.getArtifacts();
+        List<String> allCities = fr.getCities();
+        List<String> allCreators = fr.getCreators();
         Random r = new Random();
 
         String name = allNames.get(r.nextInt(allNames.size()));

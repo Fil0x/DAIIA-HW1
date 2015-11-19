@@ -1,7 +1,6 @@
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,7 +26,9 @@ public class MyFileReader {
 
     private void readFile(List<String> array, String name) {
         try {
-            BufferedReader br = new BufferedReader(new FileReader("resources/" + name));
+            ClassLoader classLoader = getClass().getClassLoader();
+            File file = new File(classLoader.getResource(name).getFile());
+            BufferedReader br = new BufferedReader(new FileReader(file));
             String line;
             while ((line = br.readLine()) != null){
                 array.add(line);

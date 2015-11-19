@@ -6,6 +6,8 @@ import jade.proto.SimpleAchieveREResponder;
 
 
 public class CuratorAgent extends Agent {
+    private static final String NAME = "curator";
+
     public CuratorAgent(){
         super();
         MessageTemplate mt = MessageTemplate.MatchProtocol(FIPANames.InteractionProtocol.FIPA_REQUEST);
@@ -18,14 +20,17 @@ public class CuratorAgent extends Agent {
             super(a, mt);
         }
 
-        protected ACLMessage prepareResultNotification(ACLMessage request, ACLMessage response){
-            //don't care
-            return null;
-        }
         protected ACLMessage prepareResponse(ACLMessage request){
-            System.out.println("Message received from " + request.getSender().getLocalName());
+            System.out.println("(Curator) Message received from " + request.getSender().getLocalName());
             ACLMessage reply = request.createReply();
             reply.setPerformative(ACLMessage.AGREE);
+            return reply;
+        }
+
+        protected ACLMessage prepareResultNotification(ACLMessage request, ACLMessage response){
+            ACLMessage reply = request.createReply();
+            reply.setPerformative(ACLMessage.INFORM);
+
             return reply;
         }
     }

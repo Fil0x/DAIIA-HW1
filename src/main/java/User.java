@@ -1,9 +1,12 @@
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-public class User {
-    private enum Gender {MALE, FEMALE};
+public class User implements Serializable{
+    private static final long serialVersionUID = 1L;
+
+    private enum Gender {MALE, FEMALE}
 
     private String fullname;
     private int age;
