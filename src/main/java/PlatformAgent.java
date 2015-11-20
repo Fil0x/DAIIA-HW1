@@ -102,6 +102,7 @@ public class PlatformAgent extends Agent {
                     ACLMessage request = new ACLMessage(ACLMessage.REQUEST);
                     request.setProtocol(FIPANames.InteractionProtocol.FIPA_REQUEST);
                     request.addReceiver(curator);
+                    request.setContent("platform");
                     request.setLanguage(FIPANames.ContentLanguage.FIPA_SL0);
                     request.setOntology(FIPANames.Ontology.SL0_ONTOLOGY);
 //                    request.setContentObject(u);

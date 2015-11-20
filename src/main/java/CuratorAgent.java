@@ -12,6 +12,8 @@ import jade.proto.SimpleAchieveREResponder;
 public class CuratorAgent extends Agent {
     private static final String NAME = "curator";
 
+    private ArtifactIndex
+
     public CuratorAgent(){
         super();
         MessageTemplate mt = MessageTemplate.MatchProtocol(FIPANames.InteractionProtocol.FIPA_REQUEST);
@@ -49,9 +51,14 @@ public class CuratorAgent extends Agent {
         }
 
         protected ACLMessage prepareResponse(ACLMessage request){
-            System.out.println("(Curator) Message received from " + request.getSender().getLocalName());
             ACLMessage reply = request.createReply();
-            reply.setPerformative(ACLMessage.AGREE);
+            if ("platform".equals(request.getContent())) {
+                System.out.println("(Curator) Message received from a platform called: " + request.getSender().getLocalName());
+                reply.setPerformative(ACLMessage.AGREE);
+            } else if ("profiler".equals(request.getContent())){
+                System.out.println("(Curator) Message received from a profiler called: "+ request.getSender().getLocalName());
+            }
+
             return reply;
         }
 
