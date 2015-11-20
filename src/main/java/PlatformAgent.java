@@ -95,6 +95,7 @@ public class PlatformAgent extends Agent {
         protected ACLMessage prepareRequest(ACLMessage msg) {
             try {
                 // Get the platform AID
+                System.out.println("(Platform) Initiating conversation");
                 AID curator;
                 DFAgentDescription dfd = new DFAgentDescription();
                 ServiceDescription sd = new ServiceDescription();
@@ -156,8 +157,10 @@ public class PlatformAgent extends Agent {
             result.addReceiver(profiler);
             result.setProtocol(FIPANames.InteractionProtocol.FIPA_REQUEST);
             try {
+
                 result.setContentObject((Serializable) artifactIDs);
                 send(result);
+                artifactIDs = null;
             } catch (IOException e) {
                 e.printStackTrace();
             }

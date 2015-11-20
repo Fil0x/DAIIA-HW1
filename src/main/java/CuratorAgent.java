@@ -1,6 +1,10 @@
+import jade.core.AID;
 import jade.core.Agent;
+import jade.core.behaviours.FSMBehaviour;
+import jade.core.behaviours.OneShotBehaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
+import jade.domain.FIPAAgentManagement.Envelope;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.domain.FIPANames;
@@ -11,17 +15,27 @@ import jade.proto.SimpleAchieveREResponder;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.List;
 
 
 public class CuratorAgent extends Agent {
     private static final String NAME = "curator";
+    private final FSMBehaviour fsm;
 
+    private String senderType;
+    private AID sender;
     private ArtifactIndex artifactIndex = new ArtifactIndex();
 
     public CuratorAgent(){
         super();
+
         MessageTemplate mt = MessageTemplate.MatchProtocol(FIPANames.InteractionProtocol.FIPA_REQUEST);
-        addBehaviour(new MySimpleAchieveREResponder(this, mt));
+        fsm = new FSMBehaviour(this);
+        fsm.registerFirstState(new MySimpleAchieveREResponder(this,mt), "A");
+
+        fsm.registerDefaultTransition("A", "A");
+
+        addBehaviour(fsm);
     }
 
     protected void setup(){
@@ -58,13 +72,15 @@ public class CuratorAgent extends Agent {
             ACLMessage reply = request.createReply();
             System.out.println("(Curator) preparing response to request from: " + request.getSender().getLocalName());
             //System.out.println("(Curator) with content: " + request.getContent());
-            if ("platform".equals(request.getEnvelope().getComments())){
+            senderType = request.getEnvelope().getComments();
+            if ("platform".equals(senderType)){
                 System.out.println("(Curator) Message received from a platform called: " + request.getSender().getLocalName());
                 reply.setPerformative(ACLMessage.AGREE);
 
-            } else if ("profiler".equals(request.getEnvelope().getComments())){
+            } else if ("profiler".equals(senderType)){
                 System.out.println("(Curator) Message received from a profiler called: "+ request.getSender().getLocalName());
                 reply.setPerformative(ACLMessage.AGREE);
+
             } else {
                 reply.setPerformative(ACLMessage.NOT_UNDERSTOOD);
 
@@ -73,19 +89,36 @@ public class CuratorAgent extends Agent {
         }
 
         protected ACLMessage prepareResultNotification(ACLMessage request, ACLMessage response){
-            ACLMessage reply = request.createReply();
-            User u;
-            try {
-                u = (User)request.getContentObject();
-                reply.setContentObject((Serializable)artifactIndex.searchArtifacts(u.getInterests()));
 
-            } catch (UnreadableException e) {
-                System.err.println("(Curator) Could not deserialize user");
-            } catch (IOException e) {
-                System.err.println("(Curator) Could not serialize artifact id list");
+            ACLMessage reply = request.createReply();
+
+            if("platform".equals(senderType)){
+                User u;
+                try {
+                    u = (User)request.getContentObject();
+                    reply.setContentObject((Serializable)artifactIndex.searchArtifactIDs(u.getInterests()));
+
+                } catch (UnreadableException e) {
+                    System.err.println("(Curator) Could not deserialize user");
+                } catch (IOException e) {
+                    System.err.println("(Curator) Could not serialize artifact id list");
+                }
+
+            } else if ("profiler".equals(senderType)){
+                List<Integer> artifactIDs;
+                try {
+                    artifactIDs = (List<Integer>)request.getContentObject();
+                    reply.setContentObject((Serializable)artifactIndex.searchArtifacts(artifactIDs));
+                } catch (UnreadableException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
             }
 
             reply.setPerformative(ACLMessage.INFORM);
+            reply.setProtocol(FIPANames.InteractionProtocol.FIPA_REQUEST);
 
             return reply;
         }
