@@ -1,4 +1,8 @@
 import jade.core.Agent;
+import jade.domain.DFService;
+import jade.domain.FIPAAgentManagement.DFAgentDescription;
+import jade.domain.FIPAAgentManagement.ServiceDescription;
+import jade.domain.FIPAException;
 import jade.domain.FIPANames;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
@@ -12,6 +16,30 @@ public class CuratorAgent extends Agent {
         super();
         MessageTemplate mt = MessageTemplate.MatchProtocol(FIPANames.InteractionProtocol.FIPA_REQUEST);
         addBehaviour(new MySimpleAchieveREResponder(this, mt));
+    }
+
+    protected void setup(){
+        // Artifact search
+        ServiceDescription sd1 = new ServiceDescription();
+        sd1.setType("artifact-search");
+        sd1.setName("provide-artifact-search");
+        sd1.addOntologies("request-ids");
+
+        // Artifact lookup based on item ID
+        ServiceDescription sd2 = new ServiceDescription();
+        sd2.setType("artifact-lookup");
+        sd2.setName("provide-artifact-lookup");
+        sd2.addOntologies("request-iteminfo");
+
+        DFAgentDescription dfd = new DFAgentDescription();
+        dfd.setName(getAID());
+        dfd.addServices(sd1);
+        dfd.addServices(sd2);
+        try {
+            DFService.register(this, dfd);
+        } catch (FIPAException e) {
+            e.printStackTrace();
+        }
     }
 
     private class MySimpleAchieveREResponder extends SimpleAchieveREResponder {

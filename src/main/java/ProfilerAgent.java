@@ -4,6 +4,10 @@ import jade.core.behaviours.OneShotBehaviour;
 import jade.core.behaviours.SequentialBehaviour;
 import jade.core.behaviours.TickerBehaviour;
 import jade.core.behaviours.WakerBehaviour;
+import jade.domain.DFService;
+import jade.domain.FIPAAgentManagement.DFAgentDescription;
+import jade.domain.FIPAAgentManagement.ServiceDescription;
+import jade.domain.FIPAException;
 import jade.domain.FIPANames;
 import jade.lang.acl.ACLMessage;
 import jade.proto.SimpleAchieveREInitiator;
@@ -18,7 +22,6 @@ public class ProfilerAgent extends Agent {
 
     public ProfilerAgent() {
         super();
-
         // This behaviour will be used to create random tourists every <period>
         addBehaviour(new TourSpawner(this, SPAWN_TIME));
         // The total transaction timeout, we can't wait forever for the curator
@@ -80,19 +83,30 @@ public class ProfilerAgent extends Agent {
         @Override
         public void action() {
             try {
-                // Create a random user
-                User u = Utilities.getUser(5);
+                // Get the platform AID
+                AID platfom;
+                DFAgentDescription dfd = new DFAgentDescription();
+                ServiceDescription sd = new ServiceDescription();
+                sd.setType("provide-tour");
+                dfd.addServices(sd);
+                DFAgentDescription[] result = DFService.search(getAgent(), dfd);
+                if (result.length>0) {
+                    platfom = result[0].getName();
+                    // Create a random user
+                    User u = Utilities.getUser(5);
 
-                // send the first message to the platform to ask for interesting artifacts
-                ACLMessage request = new ACLMessage(ACLMessage.REQUEST);
-                request.setProtocol(FIPANames.InteractionProtocol.FIPA_REQUEST);
-                request.addReceiver(new AID("platform", AID.ISLOCALNAME));
-                request.setLanguage(FIPANames.ContentLanguage.FIPA_SL0);
-                request.setOntology(FIPANames.Ontology.SL0_ONTOLOGY);
-                request.setContentObject(u);
-
-                send(request);
+                    // send the first message to the platform to ask for interesting artifacts
+                    ACLMessage request = new ACLMessage(ACLMessage.REQUEST);
+                    request.setProtocol(FIPANames.InteractionProtocol.FIPA_REQUEST);
+                    request.addReceiver(platfom);
+                    request.setLanguage(FIPANames.ContentLanguage.FIPA_SL0);
+                    request.setOntology(FIPANames.Ontology.SL0_ONTOLOGY);
+                    request.setContentObject(u);
+                    send(request);
+                }
             } catch (IOException e) {
+                e.printStackTrace();
+            } catch (FIPAException e) {
                 e.printStackTrace();
             }
         }

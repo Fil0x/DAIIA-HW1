@@ -3,13 +3,18 @@ import jade.core.Agent;
 import jade.core.behaviours.DataStore;
 import jade.core.behaviours.FSMBehaviour;
 import jade.core.behaviours.OneShotBehaviour;
+import jade.domain.DFService;
+import jade.domain.FIPAAgentManagement.DFAgentDescription;
+import jade.domain.FIPAAgentManagement.ServiceDescription;
+import jade.domain.FIPAException;
 import jade.domain.FIPANames;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import jade.lang.acl.UnreadableException;
 import jade.proto.SimpleAchieveREInitiator;
-import jade.proto.SimpleAchieveREResponder;
 import jade.proto.states.MsgReceiver;
+
+import java.io.IOException;
 
 public class PlatformAgent extends Agent {
 
@@ -33,6 +38,25 @@ public class PlatformAgent extends Agent {
         fsm.registerDefaultTransition("C", "A");
 
         addBehaviour(fsm);
+    }
+
+    protected void setup(){
+        ServiceDescription sd = new ServiceDescription();
+        sd.setName(getLocalName());
+        sd.setType("provide-tour");
+        sd.addOntologies("get-tour-guide");
+        register(sd);
+    }
+
+    private void register(ServiceDescription sd) {
+        DFAgentDescription dfd = new DFAgentDescription();
+        dfd.setName(getAID());
+        dfd.addServices(sd);
+        try {
+            DFService.register(this, dfd);
+        } catch (FIPAException e) {
+            e.printStackTrace();
+        }
     }
 
     private class WaitRequestsFromProfiler extends MsgReceiver {
@@ -63,13 +87,32 @@ public class PlatformAgent extends Agent {
 
         @Override
         protected ACLMessage prepareRequest(ACLMessage msg) {
-            ACLMessage request = new ACLMessage(ACLMessage.REQUEST);
-            request.setProtocol(FIPANames.InteractionProtocol.FIPA_REQUEST);
-            request.addReceiver(new AID("curator", AID.ISLOCALNAME));
-            request.setLanguage(FIPANames.ContentLanguage.FIPA_SL0);
-            request.setOntology(FIPANames.Ontology.SL0_ONTOLOGY);
+            try {
+                // Get the platform AID
+                AID curator;
+                DFAgentDescription dfd = new DFAgentDescription();
+                ServiceDescription sd = new ServiceDescription();
+                sd.setType("artifact-search");
+                dfd.addServices(sd);
+                DFAgentDescription[] result = DFService.search(getAgent(), dfd);
+                if (result.length>0) {
+                    curator = result[0].getName();
 
-            return request;
+                    // send the first message to the platform to ask for interesting artifacts
+                    ACLMessage request = new ACLMessage(ACLMessage.REQUEST);
+                    request.setProtocol(FIPANames.InteractionProtocol.FIPA_REQUEST);
+                    request.addReceiver(curator);
+                    request.setLanguage(FIPANames.ContentLanguage.FIPA_SL0);
+                    request.setOntology(FIPANames.Ontology.SL0_ONTOLOGY);
+//                    request.setContentObject(u);
+                    return request;
+                }
+                return null;
+            } catch (FIPAException e) {
+                e.printStackTrace();
+            }
+
+            return null;
         }
 
         @Override
