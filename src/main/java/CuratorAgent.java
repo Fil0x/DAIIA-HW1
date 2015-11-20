@@ -6,13 +6,17 @@ import jade.domain.FIPAException;
 import jade.domain.FIPANames;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
+import jade.lang.acl.UnreadableException;
 import jade.proto.SimpleAchieveREResponder;
+
+import java.io.IOException;
+import java.io.Serializable;
 
 
 public class CuratorAgent extends Agent {
     private static final String NAME = "curator";
 
-    private ArtifactIndex
+    private ArtifactIndex artifactIndex = new ArtifactIndex();
 
     public CuratorAgent(){
         super();
@@ -52,18 +56,35 @@ public class CuratorAgent extends Agent {
 
         protected ACLMessage prepareResponse(ACLMessage request){
             ACLMessage reply = request.createReply();
-            if ("platform".equals(request.getContent())) {
+            System.out.println("(Curator) preparing response to request from: " + request.getSender().getLocalName());
+            //System.out.println("(Curator) with content: " + request.getContent());
+            if ("platform".equals(request.getEnvelope().getComments())){
                 System.out.println("(Curator) Message received from a platform called: " + request.getSender().getLocalName());
                 reply.setPerformative(ACLMessage.AGREE);
-            } else if ("profiler".equals(request.getContent())){
-                System.out.println("(Curator) Message received from a profiler called: "+ request.getSender().getLocalName());
-            }
 
+            } else if ("profiler".equals(request.getEnvelope().getComments())){
+                System.out.println("(Curator) Message received from a profiler called: "+ request.getSender().getLocalName());
+                reply.setPerformative(ACLMessage.AGREE);
+            } else {
+                reply.setPerformative(ACLMessage.NOT_UNDERSTOOD);
+
+            }
             return reply;
         }
 
         protected ACLMessage prepareResultNotification(ACLMessage request, ACLMessage response){
             ACLMessage reply = request.createReply();
+            User u;
+            try {
+                u = (User)request.getContentObject();
+                reply.setContentObject((Serializable)artifactIndex.searchArtifacts(u.getInterests()));
+
+            } catch (UnreadableException e) {
+                System.err.println("(Curator) Could not deserialize user");
+            } catch (IOException e) {
+                System.err.println("(Curator) Could not serialize artifact id list");
+            }
+
             reply.setPerformative(ACLMessage.INFORM);
 
             return reply;

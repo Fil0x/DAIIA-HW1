@@ -5,6 +5,7 @@ import jade.core.behaviours.FSMBehaviour;
 import jade.core.behaviours.OneShotBehaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
+import jade.domain.FIPAAgentManagement.Envelope;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.domain.FIPANames;
@@ -15,6 +16,8 @@ import jade.proto.SimpleAchieveREInitiator;
 import jade.proto.states.MsgReceiver;
 
 import java.io.IOException;
+import java.io.Serializable;
+import java.util.List;
 
 public class PlatformAgent extends Agent {
 
@@ -24,6 +27,7 @@ public class PlatformAgent extends Agent {
     private AID profiler;
     private String conversationID;
     private User user;
+    private List<Integer> artifactIDs;
 
     public PlatformAgent(){
         super();
@@ -69,13 +73,15 @@ public class PlatformAgent extends Agent {
         @Override
         protected void handleMessage(ACLMessage msg) {
             System.out.println("(Platform) Received msg");
+            profiler = msg.getSender();
+            conversationID = msg.getConversationId();
             try {
-                profiler = msg.getSender();
-                conversationID = msg.getConversationId();
                 user = (User) msg.getContentObject();
+                System.out.println("(Platform) Got user with name: " + user.getFullname());
             } catch (UnreadableException e) {
-                e.printStackTrace();
+                System.err.println("(Platform) Could not deserialize user object");
             }
+
         }
     }
 
@@ -98,19 +104,21 @@ public class PlatformAgent extends Agent {
                 if (result.length>0) {
                     curator = result[0].getName();
 
-                    // send the first message to the platform to ask for interesting artifacts
+                    // send the first message to the Curator to ask for interesting artifacts
                     ACLMessage request = new ACLMessage(ACLMessage.REQUEST);
                     request.setProtocol(FIPANames.InteractionProtocol.FIPA_REQUEST);
                     request.addReceiver(curator);
-                    request.setContent("platform");
-                    request.setLanguage(FIPANames.ContentLanguage.FIPA_SL0);
-                    request.setOntology(FIPANames.Ontology.SL0_ONTOLOGY);
-//                    request.setContentObject(u);
+                    request.setContentObject(user);
+                    Envelope envelope = new Envelope();
+                    envelope.setComments("platform");
+                    request.setEnvelope(envelope);
                     return request;
                 }
                 return null;
             } catch (FIPAException e) {
                 e.printStackTrace();
+            } catch (IOException e) {
+                System.err.println("(Platform) Couldn't serialize user info");
             }
 
             return null;
@@ -123,7 +131,13 @@ public class PlatformAgent extends Agent {
 
         @Override
         protected void handleInform(ACLMessage msg) {
+
             System.out.println("Platform: Received INFORM");
+            try {
+                artifactIDs = (List<Integer>)msg.getContentObject();
+            } catch (UnreadableException e) {
+                e.printStackTrace();
+            }
         }
 
     }
@@ -136,7 +150,17 @@ public class PlatformAgent extends Agent {
 
         @Override
         public void action() {
-
+            System.out.println("(Platform) Gonna send some IDs back");
+            // send the first message to the Curator to ask for interesting artifacts
+            ACLMessage result = new ACLMessage(ACLMessage.INFORM);
+            result.addReceiver(profiler);
+            result.setProtocol(FIPANames.InteractionProtocol.FIPA_REQUEST);
+            try {
+                result.setContentObject((Serializable) artifactIDs);
+                send(result);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 }

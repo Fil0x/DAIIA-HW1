@@ -1,6 +1,7 @@
+import java.io.Serializable;
 import java.util.Date;
 
-public class Artifact {
+public class Artifact implements Serializable{
     private int id;
     private String name;
     private String creator;

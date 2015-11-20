@@ -1,18 +1,19 @@
 import jade.core.AID;
 import jade.core.Agent;
-import jade.core.behaviours.OneShotBehaviour;
-import jade.core.behaviours.SequentialBehaviour;
-import jade.core.behaviours.TickerBehaviour;
-import jade.core.behaviours.WakerBehaviour;
+import jade.core.behaviours.*;
 import jade.domain.DFService;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
+import jade.domain.FIPAAgentManagement.Envelope;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.domain.FIPAException;
 import jade.domain.FIPANames;
 import jade.lang.acl.ACLMessage;
-import jade.proto.SimpleAchieveREInitiator;
+import jade.lang.acl.MessageTemplate;
+import jade.lang.acl.UnreadableException;
+import jade.proto.states.MsgReceiver;
 
 import java.io.IOException;
+import java.util.List;
 
 public class ProfilerAgent extends Agent {
 
@@ -53,25 +54,8 @@ public class ProfilerAgent extends Agent {
         protected void onTick() {
             SequentialBehaviour sb = new SequentialBehaviour(getAgent());
             sb.addSubBehaviour(new RequestTourGuide(getAgent()));
-
+            sb.addSubBehaviour(new WaitArtifactIDsFromPlatform(getAgent()));
             getAgent().addBehaviour(sb);
-        }
-    }
-
-    private class MyWakerBehavior extends WakerBehaviour {
-
-        public MyWakerBehavior(Agent a, long timeout) {
-            super(a, timeout);
-        }
-
-        @Override
-        public void onStart() {
-            System.out.println("Agent:" + getAgent().getName() + "[Waker]: is ready!");
-        }
-
-        @Override
-        public void onWake(){
-            System.out.println("Agent:" + getAgent().getName() + "[Waker]: is ready, woke up.");
         }
     }
 
@@ -102,11 +86,40 @@ public class ProfilerAgent extends Agent {
                     request.setLanguage(FIPANames.ContentLanguage.FIPA_SL0);
                     request.setOntology(FIPANames.Ontology.SL0_ONTOLOGY);
                     request.setContentObject(u);
+                    Envelope envelope = new Envelope();
+                    envelope.setComments("profiler");
+                    request.setEnvelope(envelope);
                     send(request);
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (FIPAException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private class WaitArtifactIDsFromPlatform extends MsgReceiver{
+
+        public WaitArtifactIDsFromPlatform(Agent a) {
+            super(a, MessageTemplate.MatchProtocol(FIPANames.InteractionProtocol.FIPA_REQUEST),
+                    MsgReceiver.INFINITE, new DataStore(), "key");
+        }
+
+        @Override
+        protected void handleMessage(ACLMessage msg) {
+            System.out.println("(Profiler) Received msg");
+
+            try {
+                List<Integer> artifactIds = (List<Integer>)msg.getContentObject();
+                StringBuilder sb = new StringBuilder();
+                sb.append("(Profiler) Got artifacts: ");
+                for (Integer i : artifactIds){
+                    sb.append(i);
+                    sb.append(" ");
+                }
+                System.out.println(sb.toString());
+            } catch (UnreadableException e) {
                 e.printStackTrace();
             }
         }
