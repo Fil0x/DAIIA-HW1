@@ -114,7 +114,6 @@ public class CuratorAgent extends Agent {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-
             }
 
             reply.setPerformative(ACLMessage.INFORM);

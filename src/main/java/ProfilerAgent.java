@@ -10,15 +10,19 @@ import jade.domain.FIPANames;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import jade.lang.acl.UnreadableException;
+import jade.proto.SimpleAchieveREInitiator;
 import jade.proto.states.MsgReceiver;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ProfilerAgent extends Agent {
 
     private int TOTAL_TIME = 60000;
     private int SPAWN_TIME = 3000;
+    private List<Integer> itemIDs;
+    private List<Artifact> artifacts;
     private static final String NAME = "profiler";
 
     public ProfilerAgent() {
@@ -55,6 +59,7 @@ public class ProfilerAgent extends Agent {
             SequentialBehaviour sb = new SequentialBehaviour(getAgent());
             sb.addSubBehaviour(new RequestTourGuide(getAgent()));
             sb.addSubBehaviour(new WaitArtifactIDsFromPlatform(getAgent()));
+            sb.addSubBehaviour(new AskCuratorForArtifacts(getAgent(), new ACLMessage(ACLMessage.INFORM)));
             getAgent().addBehaviour(sb);
         }
     }
@@ -80,6 +85,8 @@ public class ProfilerAgent extends Agent {
                     User u = Utilities.getUser(5);
 
                     // send the first message to the platform to ask for interesting artifacts
+                    System.out.println("(Profiler) ---------------------------");
+                    System.out.println("(Profiler) Sending request to platform");
                     ACLMessage request = new ACLMessage(ACLMessage.REQUEST);
                     request.setProtocol(FIPANames.InteractionProtocol.FIPA_REQUEST);
                     request.addReceiver(platfom);
@@ -99,7 +106,7 @@ public class ProfilerAgent extends Agent {
         }
     }
 
-    private class WaitArtifactIDsFromPlatform extends MsgReceiver{
+    private class WaitArtifactIDsFromPlatform extends MsgReceiver {
 
         public WaitArtifactIDsFromPlatform(Agent a) {
             super(a, MessageTemplate.MatchProtocol(FIPANames.InteractionProtocol.FIPA_REQUEST),
@@ -110,15 +117,74 @@ public class ProfilerAgent extends Agent {
         protected void handleMessage(ACLMessage msg) {
             System.out.println("(Profiler) Received msg");
 
-            try {
-                List<Integer> artifactIds = (List<Integer>)msg.getContentObject();
-                StringBuilder sb = new StringBuilder();
-                sb.append("(Profiler) Got artifacts: ");
-                for (Integer i : artifactIds){
-                    sb.append(i);
-                    sb.append(" ");
+            if(msg != null && "deliver-itemids".equals(msg.getOntology())) {
+                try {
+                    itemIDs = (List<Integer>) msg.getContentObject();
+                    StringBuilder sb = new StringBuilder();
+                    sb.append("(Profiler) Got artifacts: ");
+                    for (Integer i : itemIDs) {
+                        sb.append(i);
+                        sb.append(" ");
+                    }
+                    System.out.println(sb.toString());
+                } catch (UnreadableException e) {
+                    e.printStackTrace();
                 }
-                System.out.println(sb.toString());
+            }
+        }
+    }
+
+    private class AskCuratorForArtifacts extends SimpleAchieveREInitiator {
+
+        public AskCuratorForArtifacts(Agent a, ACLMessage msg) {
+            super(a, msg);
+        }
+
+        @Override
+        protected ACLMessage prepareRequest(ACLMessage msg) {
+            try {
+                // Get the platform AID
+                System.out.println("(Profiler) Initiating conversation");
+                AID curator;
+                DFAgentDescription dfd = new DFAgentDescription();
+                ServiceDescription sd = new ServiceDescription();
+                sd.setType("artifact-search");
+                dfd.addServices(sd);
+                DFAgentDescription[] result = DFService.search(getAgent(), dfd);
+                if (result.length > 0) {
+                    curator = result[0].getName();
+
+                    // send the first message to the Curator to ask for interesting artifacts
+                    ACLMessage request = new ACLMessage(ACLMessage.REQUEST);
+                    request.setProtocol(FIPANames.InteractionProtocol.FIPA_REQUEST);
+                    request.addReceiver(curator);
+                    Envelope envelope = new Envelope();
+                    envelope.setComments("profiler");
+                    request.setEnvelope(envelope);
+                    return request;
+                }
+                return null;
+            } catch (FIPAException e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+
+        @Override
+        protected void handleAgree(ACLMessage msg) {
+            System.out.println("(Profiler) Received AGREE from curator");
+        }
+
+        @Override
+        protected void handleInform(ACLMessage msg) {
+
+            System.out.println("(Profiler) Received INFORM from curator");
+            try {
+                artifacts = (List<Artifact>) msg.getContentObject();
+                System.out.println("(Profiler) Received artifact information:");
+                for(Artifact a: artifacts) {
+                    System.out.println(a.getName() + ", " + a.getGenre());
+                }
             } catch (UnreadableException e) {
                 e.printStackTrace();
             }

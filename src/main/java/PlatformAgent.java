@@ -34,12 +34,12 @@ public class PlatformAgent extends Agent {
 
         fsm = new FSMBehaviour(this);
         fsm.registerFirstState(new WaitRequestsFromProfiler(this), "A");
-        fsm.registerState(new AskCurator(this), "B");
+        fsm.registerState(new AskCurator(this, new ACLMessage(ACLMessage.INFORM)), "B");
         fsm.registerState(new SendItemIDS(this), "C");
 
         fsm.registerDefaultTransition("A", "B");
         fsm.registerDefaultTransition("B", "C");
-        fsm.registerDefaultTransition("C", "A");
+        fsm.registerDefaultTransition("C", "A", new String[]{"B"}); // Reset that fucking REInitiator
 
         addBehaviour(fsm);
     }
@@ -87,8 +87,8 @@ public class PlatformAgent extends Agent {
 
     private class AskCurator extends SimpleAchieveREInitiator {
 
-        public AskCurator(Agent a) {
-            super(a, new ACLMessage(ACLMessage.INFORM));
+        public AskCurator(Agent a, ACLMessage msg) {
+            super(a, msg);
         }
 
         @Override
@@ -102,7 +102,7 @@ public class PlatformAgent extends Agent {
                 sd.setType("artifact-search");
                 dfd.addServices(sd);
                 DFAgentDescription[] result = DFService.search(getAgent(), dfd);
-                if (result.length>0) {
+                if (result.length > 0) {
                     curator = result[0].getName();
 
                     // send the first message to the Curator to ask for interesting artifacts
@@ -118,11 +118,11 @@ public class PlatformAgent extends Agent {
                 return null;
             } catch (FIPAException e) {
                 e.printStackTrace();
+                return null;
             } catch (IOException e) {
                 System.err.println("(Platform) Couldn't serialize user info");
+                return null;
             }
-
-            return null;
         }
 
         @Override
@@ -156,11 +156,11 @@ public class PlatformAgent extends Agent {
             ACLMessage result = new ACLMessage(ACLMessage.INFORM);
             result.addReceiver(profiler);
             result.setProtocol(FIPANames.InteractionProtocol.FIPA_REQUEST);
+            result.setOntology("deliver-itemids");
             try {
 
                 result.setContentObject((Serializable) artifactIDs);
                 send(result);
-                artifactIDs = null;
             } catch (IOException e) {
                 e.printStackTrace();
             }
