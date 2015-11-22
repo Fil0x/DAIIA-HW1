@@ -26,12 +26,14 @@ public class CuratorAgent extends Agent {
     private AID sender;
     private ArtifactIndex artifactIndex = new ArtifactIndex();
 
+    // A single state FSM(for now) that works like a cyclic behaviour.
+    // The only behaviour is to wait for requests from either the profiler or platform.
     public CuratorAgent(){
         super();
 
         MessageTemplate mt = MessageTemplate.MatchProtocol(FIPANames.InteractionProtocol.FIPA_REQUEST);
         fsm = new FSMBehaviour(this);
-        fsm.registerFirstState(new MySimpleAchieveREResponder(this,mt), "A");
+        fsm.registerFirstState(new ArtifactRequestREResponder (this,mt), "A");
 
         fsm.registerDefaultTransition("A", "A");
 
@@ -39,6 +41,7 @@ public class CuratorAgent extends Agent {
     }
 
     protected void setup(){
+        // Register both services to DF
         // Artifact search
         ServiceDescription sd1 = new ServiceDescription();
         sd1.setType("artifact-search");
@@ -62,9 +65,9 @@ public class CuratorAgent extends Agent {
         }
     }
 
-    private class MySimpleAchieveREResponder extends SimpleAchieveREResponder {
+    private class ArtifactRequestREResponder  extends SimpleAchieveREResponder {
 
-        public MySimpleAchieveREResponder(Agent a, MessageTemplate mt) {
+        public ArtifactRequestREResponder (Agent a, MessageTemplate mt) {
             super(a, mt);
         }
 

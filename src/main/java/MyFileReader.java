@@ -8,6 +8,7 @@ public class MyFileReader {
     private static MyFileReader instance = null;
     private static List<String> persons, artifacts, cities, creators, genre;
 
+    // Handles all the resource file loading and statically keeps it in memory.
     private MyFileReader() {
         // Initialize the arrays
         persons = new ArrayList<String>();

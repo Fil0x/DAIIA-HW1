@@ -29,6 +29,14 @@ public class PlatformAgent extends Agent {
     private User user;
     private List<Integer> artifactIDs;
 
+
+    /*
+     A finite state machine to simulate the procedure that a platform would follow:
+     A - Wait for requests from a client
+     B - Ask the backend for the data
+     C - Reply with the results to the client
+     Repeat.
+     */
     public PlatformAgent(){
         super();
 
@@ -39,12 +47,14 @@ public class PlatformAgent extends Agent {
 
         fsm.registerDefaultTransition("A", "B");
         fsm.registerDefaultTransition("B", "C");
-        fsm.registerDefaultTransition("C", "A", new String[]{"B"}); // Reset that fucking REInitiator
+        // The extra argument below is used to reset the AskCurator behaviour.
+        fsm.registerDefaultTransition("C", "A", new String[]{"B"});
 
         addBehaviour(fsm);
     }
 
     protected void setup(){
+        // Register to the DF to advertise your presence.
         ServiceDescription sd = new ServiceDescription();
         sd.setName(getLocalName());
         sd.setType("provide-tour");
@@ -73,6 +83,10 @@ public class PlatformAgent extends Agent {
         @Override
         protected void handleMessage(ACLMessage msg) {
             System.out.println("(Platform) Received msg");
+            /*
+              Since we don't have intra behaviour communication we have to store the received
+              information for the next behaviour in line to pick them up.
+            */
             profiler = msg.getSender();
             conversationID = msg.getConversationId();
             try {
@@ -87,6 +101,10 @@ public class PlatformAgent extends Agent {
 
     private class AskCurator extends SimpleAchieveREInitiator {
 
+        /*
+           Initiate a convertation with the curator to get the information for the tourists'
+           interests.
+        */
         public AskCurator(Agent a, ACLMessage msg) {
             super(a, msg);
         }
@@ -111,6 +129,7 @@ public class PlatformAgent extends Agent {
                     request.addReceiver(curator);
                     request.setContentObject(user);
                     Envelope envelope = new Envelope();
+                    // Distinguish between profiler and platform
                     envelope.setComments("platform");
                     request.setEnvelope(envelope);
                     return request;
@@ -134,6 +153,7 @@ public class PlatformAgent extends Agent {
         protected void handleInform(ACLMessage msg) {
 
             System.out.println("Platform: Received INFORM");
+            // Store it in the class for the SendItemIDS to send them to the Profiler
             try {
                 artifactIDs = (List<Integer>)msg.getContentObject();
             } catch (UnreadableException e) {

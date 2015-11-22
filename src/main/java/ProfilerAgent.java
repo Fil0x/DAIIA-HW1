@@ -27,7 +27,7 @@ public class ProfilerAgent extends Agent {
 
     public ProfilerAgent() {
         super();
-        // This behaviour will be used to create random tourists every <period>
+        // This behaviour will be used to create random tourists every SPAWN_TIME
         addBehaviour(new TourSpawner(this, SPAWN_TIME));
         // The total transaction timeout, we can't wait forever for the curator
         // addBehaviour(new MyWakerBehavior(this, TOTAL_TIME));
@@ -56,6 +56,13 @@ public class ProfilerAgent extends Agent {
 
         @Override
         protected void onTick() {
+            /*
+             The sequential behaviour simulates the steps that an actual tourist would follow when visiting
+             a museum.
+             1 - Ask the main frame for a tour
+             2 - wait for a reply
+             3 - ask the curator for facts about an artifact
+             */
             SequentialBehaviour sb = new SequentialBehaviour(getAgent());
             sb.addSubBehaviour(new RequestTourGuide(getAgent()));
             sb.addSubBehaviour(new WaitArtifactIDsFromPlatform(getAgent()));
@@ -65,6 +72,10 @@ public class ProfilerAgent extends Agent {
     }
 
     private class RequestTourGuide extends OneShotBehaviour {
+        /*
+         The first step is to send to the platform his interests in order to get a personalized
+         guided tour.
+         */
         public RequestTourGuide(Agent agent) {
             super(agent);
         }
@@ -72,7 +83,7 @@ public class ProfilerAgent extends Agent {
         @Override
         public void action() {
             try {
-                // Get the platform AID
+                // Get the platform AID and ask the DF about the presence of the platform.
                 AID platfom;
                 DFAgentDescription dfd = new DFAgentDescription();
                 ServiceDescription sd = new ServiceDescription();
@@ -94,6 +105,7 @@ public class ProfilerAgent extends Agent {
                     request.setOntology(FIPANames.Ontology.SL0_ONTOLOGY);
                     request.setContentObject(u);
                     Envelope envelope = new Envelope();
+                    // Used to distinguish between the request of a profiler and a platform in the curator.
                     envelope.setComments("profiler");
                     request.setEnvelope(envelope);
                     send(request);
@@ -108,6 +120,9 @@ public class ProfilerAgent extends Agent {
 
     private class WaitArtifactIDsFromPlatform extends MsgReceiver {
 
+        /*
+         A msgreceiver to wait for INFINITE time for a reply from the platform containing the itemIDs.
+         */
         public WaitArtifactIDsFromPlatform(Agent a) {
             super(a, MessageTemplate.MatchProtocol(FIPANames.InteractionProtocol.FIPA_REQUEST),
                     MsgReceiver.INFINITE, new DataStore(), "key");
@@ -119,6 +134,7 @@ public class ProfilerAgent extends Agent {
 
             if(msg != null && "deliver-itemids".equals(msg.getOntology())) {
                 try {
+                    // IDs tailored to his interests.
                     itemIDs = (List<Integer>) msg.getContentObject();
                     StringBuilder sb = new StringBuilder();
                     sb.append("(Profiler) Got artifacts: ");
@@ -136,6 +152,10 @@ public class ProfilerAgent extends Agent {
 
     private class AskCuratorForArtifacts extends SimpleAchieveREInitiator {
 
+        /*
+         Sends all the IDs to the curator in order to get detailed information about the artifacts
+         during his visit in the museum.
+         */
         public AskCuratorForArtifacts(Agent a, ACLMessage msg) {
             super(a, msg);
         }
@@ -159,6 +179,7 @@ public class ProfilerAgent extends Agent {
                     request.setProtocol(FIPANames.InteractionProtocol.FIPA_REQUEST);
                     request.addReceiver(curator);
                     Envelope envelope = new Envelope();
+                    // Used to distinguish between the request of a profiler and a platform in the curator.
                     envelope.setComments("profiler");
                     request.setEnvelope(envelope);
                     return request;

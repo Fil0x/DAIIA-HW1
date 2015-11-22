@@ -1,6 +1,10 @@
 import java.io.Serializable;
 import java.util.Date;
 
+/*
+ Represents a single artifact which contains all the relevant information.
+ A curator can create and manage randomly created artifacts based on files located in the resources folder.
+*/
 public class Artifact implements Serializable{
     private int id;
     private String name;

@@ -7,6 +7,7 @@ public class Utilities {
         return id;
     }
 
+    // Generate a random user every interval of the ProfilerAgent.
     public static User getUser(int num_interests) {
         MyFileReader fr = MyFileReader.getInstance();
         List<String> allUsers = fr.getPersons();
@@ -25,6 +26,10 @@ public class Utilities {
         return new User(name, age, interests);
     }
 
+    /*
+     Generate a random artifact when either platform asks for them based on the tourists' interests or
+     when the profiler asks for more information of an artifact given the ID.
+      */
     public static Artifact getArtifact() {
         MyFileReader fr = MyFileReader.getInstance();
         int id = generateItemId();
